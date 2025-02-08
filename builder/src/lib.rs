@@ -43,6 +43,15 @@ pub fn derive(input: TokenStream) -> TokenStream {
         ident
     });
 
+    let functions = fields.clone().map(|(ident, ty)| {
+        quote::quote! {
+            fn #ident(&mut self, #ident: #ty) -> &mut Self {
+                self.#ident = Some(#ident);
+                self
+            }
+        }
+    });
+
     let fields = fields.map(|(name, ty)| {
         quote::quote! {
             #name: Option<#ty>
@@ -62,6 +71,11 @@ pub fn derive(input: TokenStream) -> TokenStream {
 
         struct #builder_name {
             #(#fields),*
+        }
+
+        impl #builder_name {
+            #(#functions)
+            *
         }
     };
 
