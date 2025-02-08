@@ -32,21 +32,20 @@ pub fn derive(input: TokenStream) -> TokenStream {
         .into_iter()
         .map(|field| {
             let syn::Field {
-                vis,
                 ident,
                 ty,
                 ..
             } = field;
-            (ident.unwrap(), ty, vis)
+            (ident.unwrap(), ty)
         });
 
     let names = fields.clone().map(|(ident, ..)| {
         ident
     });
 
-    let fields = fields.map(|(name, ty, vis)| {
+    let fields = fields.map(|(name, ty)| {
         quote::quote! {
-            #vis #name: #ty
+            #name: Option<#ty>
         }
     });
 
@@ -56,18 +55,16 @@ pub fn derive(input: TokenStream) -> TokenStream {
         impl #name {
             fn builder() -> #builder_name {
                 #builder_name {
-                    #(#names: None)*
+                    #(#names: None),*
                 }
             }
         }
 
         struct #builder_name {
-            #(#fields),
-            *
+            #(#fields),*
         }
     };
 
-    println!("{expanded}");
 
     expanded.into()
 }
