@@ -76,6 +76,9 @@ pub fn derive(input: TokenStream) -> TokenStream {
         impl #builder_name {
             #(#functions)
             *
+            pub fn build(&mut self) -> Result<#name, Box<dyn ::std::error::Error>> {
+
+            }
         }
     };
 
