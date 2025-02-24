@@ -29,6 +29,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
         field.ty = quote::quote! { Option<ty> }.into().parse();
     }); */
 
+    // Iterator from [`Punctuated<Field, Comma>`] to [`(Ident, Type, Vec<Attribute>)`]
     let fields = fields
         .into_iter()
         .map(|field| {
@@ -43,14 +44,18 @@ pub fn derive(input: TokenStream) -> TokenStream {
 
     let functions = fields.clone().map(|(ident, orig_ty, attrs)| {
 
-        match extract_inner_vec(&orig_ty) {
+        // If this is a vec you should check if it has the [`builder`] Attribute
+        match extract_inner_vec(&orig_ty) {
             Some(single_type) => {
                 if !attrs.is_empty() {
                     let functions = attrs.into_iter().filter_map(|attr| { 
+                        // We shouldn't care
                         if !attr.path().is_ident("builder")
                         {
                             return None;
                         }
+                        // #[builder(each = "...")]
+                        // Parse inside () like it was a #[each = "..."]
                         match attr.parse_args::<syn::MetaNameValue>().expect("builder Attribute should have an assignement argument") {
                             syn::MetaNameValue {
                                 path,
@@ -77,7 +82,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
                                     })
                                 }
                             },
-                                _ => panic!("builder Attribute should have an assignement argument"),
+                            _ => panic!("builder Attribute should have an assignement argument"),
                         }
                     });
 
@@ -87,9 +92,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
                             self.#ident = #ident;
                             self
                         }
-                        #(
-                            #functions
-                        )*
+                        #(#functions)*
                     }
                 } else {
                     quote::quote! {
