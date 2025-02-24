@@ -1,5 +1,4 @@
 use proc_macro::TokenStream;
-use quote::ToTokens;
 use syn::spanned::Spanned;
 
 #[proc_macro_derive(Builder, attributes(builder))]
@@ -41,10 +40,6 @@ pub fn derive(input: TokenStream) -> TokenStream {
             } = field;
             (ident.unwrap(), ty, attrs)
         });
-
-    let names = fields.clone().map(|(ident, ..)| {
-        ident
-    });
 
     let functions = fields.clone().map(|(ident, orig_ty, attrs)| {
 
@@ -113,7 +108,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
 
                 quote::quote! {
                     fn #ident(&mut self, #ident: #ty) -> &mut Self {
-                        self.#ident = Some(#ident);
+                        self.#ident = ::core::option::Option::Some(#ident);
                         self
                     }
                 }
@@ -132,19 +127,19 @@ pub fn derive(input: TokenStream) -> TokenStream {
             }
         } else {
             quote::quote! {
-                #name: self.#name.take().ok_or(std::convert::Into::<Box<dyn std::error::Error>>::into(format!("Field #name not set")))?
+                #name: self.#name.take().ok_or(::std::convert::Into::<::std::boxed::Box<dyn ::std::error::Error>>::into(format!("Field #name not set")))?
             } 
         }
     });
 
-    let builder_construction = fields.clone().map(|(name, ty, attrs)| {
+    let builder_construction = fields.clone().map(|(name, ty, _attrs)| {
         if extract_inner_vec(&ty).is_some() {
             quote::quote! {
                 #name: vec![]
             }
         } else {
             quote::quote! {
-                #name: None
+                #name: ::core::option::Option::None
             }
         }
     });
@@ -152,7 +147,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
     let builder_fields = fields.map(|(name, ty, _)| {
         if let Some(inner_ty) = extract_inner_option(&ty) {
             quote::quote! {
-                #name: Option<#inner_ty>
+                #name: ::core::option::Option<#inner_ty>
             }
         } else if extract_inner_vec(&ty).is_some() {
             quote::quote! {
@@ -160,7 +155,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
             }
         } else {
             quote::quote! {
-                #name: Option<#ty>
+                #name: ::core::option::Option<#ty>
             }
         }
     });
@@ -183,8 +178,8 @@ pub fn derive(input: TokenStream) -> TokenStream {
         impl #builder_name {
             #(#functions)
             *
-            pub fn build(&mut self) -> Result<#name, Box<dyn ::std::error::Error>> {
-                Ok(#name {
+            pub fn build(&mut self) -> ::core::result::Result<#name, ::std::boxed::Box<dyn ::std::error::Error>> {
+                ::core::result::Result::Ok(#name {
                     #(#src_construction),*
                 })
             }
